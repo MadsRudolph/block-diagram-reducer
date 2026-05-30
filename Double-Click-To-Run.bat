@@ -8,7 +8,7 @@ if %errorlevel% neq 0 (
     echo =======================================================
     echo ERROR: Node.js is NOT installed on this computer!
     echo =======================================================
-    echo Node.js is required to install local dependencies and build the app.
+    echo Node.js is required to install dependencies and run the app.
     echo Please download and install Node.js from: https://nodejs.org/
     echo =======================================================
     pause
@@ -18,8 +18,8 @@ if %errorlevel% neq 0 (
 :: 2. Check if local dependencies exist (auto-install)
 if not exist "node_modules\" (
     echo =======================================================
-    echo Node modules not found. Initializing offline dependencies...
-    echo This may take a few seconds...
+    echo Node modules not found. Installing dependencies...
+    echo This may take a minute...
     echo =======================================================
     call npm install
     if %errorlevel% neq 0 (
@@ -31,7 +31,7 @@ if not exist "node_modules\" (
 
 :: 2b. Ensure the Electron runtime binary actually downloaded.
 ::     npm install does NOT reliably trigger Electron's binary download
-::     (it can be skipped or fail silently), which makes packaging fail later.
+::     (it can be skipped or fail silently), which would stop the app launching.
 if not exist "node_modules\electron\dist\electron.exe" (
     echo =======================================================
     echo Electron runtime binary missing. Downloading it now...
@@ -59,25 +59,12 @@ if not exist "bundle.js" (
     )
 )
 
-:: 4. Check if standalone desktop executable exists (auto-package)
-if not exist "BlockDiagramReducer-win32-x64\BlockDiagramReducer.exe" (
-    echo =======================================================
-    echo Standalone executable not found.
-    echo Compiling native Windows desktop application (.exe)...
-    echo This will download the Electron redistributable and package it.
-    echo This only happens once!
-    echo =======================================================
-    call npm run package
-    if %errorlevel% neq 0 (
-        echo ERROR: Standalone packaging failed!
-        pause
-        exit /b
-    )
-)
-
-:: 5. Launch the standalone desktop application!
+:: 4. Launch the app LIVE from this repo folder (not a packaged copy).
+::     Running directly with electron is what makes the in-app
+::     "Check for Updates" button work: git pull + rebuild + reload
+::     all operate on these real files, so new features appear on reload.
 echo =======================================================
-echo Launching standalone desktop application...
+echo Launching desktop application...
 echo =======================================================
-start "" "BlockDiagramReducer-win32-x64\BlockDiagramReducer.exe"
+start "" "node_modules\electron\dist\electron.exe" "%~dp0"
 exit
