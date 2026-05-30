@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Canvas
     const canvas = new BlockDiagramCanvas(svgEl, () => {
         handleStateChange();
+        updateDiagramStats();
     });
 
     // Add Nodes
@@ -157,6 +158,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (copyActionsContainer) copyActionsContainer.style.display = 'none';
         tfOutput.innerHTML = `<span style="color: var(--text-secondary); font-size: 13px;">Diagram solved TF will appear here.</span>`;
         stepsOutput.innerHTML = `<div style="color: var(--text-secondary); font-size: 12px; font-style: italic; text-align: center; margin-top: 40px;">Connect your input R to output Y and blocks, then solve to view algebraic steps.</div>`;
+        updateDiagramStats();
+    }
+
+    function updateDiagramStats() {
+        const blocksCount = canvas.nodes.filter(n => n.type === 'block').length;
+        const sumsCount = canvas.nodes.filter(n => n.type === 'sum').length;
+        const connsCount = canvas.connections.length;
+        
+        let loopsCount = 0;
+        canvas.connections.forEach(c => {
+            const fromNode = canvas.nodes.find(n => n.id === c.fromNode);
+            const toNode = canvas.nodes.find(n => n.id === c.toNode);
+            if (fromNode && toNode && toNode.x < fromNode.x) {
+                loopsCount++;
+            }
+        });
+
+        const blocksEl = document.getElementById('stats-blocks');
+        const sumsEl = document.getElementById('stats-sums');
+        const connsEl = document.getElementById('stats-conns');
+        const loopsEl = document.getElementById('stats-loops');
+
+        if (blocksEl) blocksEl.textContent = blocksCount;
+        if (sumsEl) sumsEl.textContent = sumsCount;
+        if (connsEl) connsEl.textContent = connsCount;
+        if (loopsEl) loopsEl.textContent = loopsCount;
     }
 
     function renderMathSolution(result) {
