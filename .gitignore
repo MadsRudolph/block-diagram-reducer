@@ -1,0 +1,6 @@
+node_modules/
+BlockDiagramReducer-win32-x64/
+bundle.js
+package-lock.json
+.DS_Store
+*.log

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>34722 Linear Control Design — Block Diagram Reduction Tool</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="stylesheet" href="./style.css">
+    
+    <!-- KaTeX for beautiful math formulas (Offline Local) -->
+    <link rel="stylesheet" href="./node_modules/katex/dist/katex.min.css">
+    <script defer src="./node_modules/katex/dist/katex.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- LEFT CONTROL PANEL -->
+        <aside class="sidebar">
+            <div class="panel-header">
+                <h1>LCD1 Reducer</h1>
+                <p>Block Diagram Reduction Assistant</p>
+            </div>
+
+            <h2>Add Component</h2>
+            <div class="tool-grid">
+                <button class="btn-tool blue" id="add-input-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/></svg>
+                    Input (R)
+                </button>
+                <button class="btn-tool blue" id="add-output-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16l4-4-4-4M8 12h8"/></svg>
+                    Output (Y)
+                </button>
+                <button class="btn-tool purple" id="add-block-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6"/></svg>
+                    Block (G)
+                </button>
+                <button class="btn-tool purple" id="add-sum-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+                    Sum Junction
+                </button>
+            </div>
+
+            <h2>Properties</h2>
+            <div id="properties-panel" class="form-group" style="display: none;">
+                <label for="prop-label">Node Label</label>
+                <input type="text" id="prop-label" placeholder="e.g. G1">
+                
+                <label for="prop-value" style="margin-top: 12px;" id="prop-value-label">Transfer Function</label>
+                <input type="text" id="prop-value" placeholder="e.g. 10/(s^2+3s+2)">
+            </div>
+            <div id="no-properties-msg" style="color: var(--text-secondary); font-size: 12px; font-style: italic; text-align: center; margin-bottom: 20px;">
+                Select a node on the canvas to edit its properties.
+            </div>
+
+            <h2>Load Exam Templates</h2>
+            <div class="template-list">
+                <button class="template-item" data-template="feedback">
+                    Standard Feedback Loop
+                    <span>Simple G / H negative feedback</span>
+                </button>
+                <button class="template-item" data-template="s20q3">
+                    Exam S20 Q3 Diagram
+                    <span>Parallel branch A with loop 1/(s+B)</span>
+                </button>
+                <button class="template-item" data-template="s21q1">
+                    Exam S21 Q1 Diagram
+                    <span>Two forward paths sharing one loop BCF</span>
+                </button>
+                <button class="template-item" data-template="f22q1">
+                    Exam F22 Q1 Diagram
+                    <span>Nested loops H1, H2 (Take-off moved Past E)</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- CENTER INTERACTIVE CANVAS -->
+        <main class="canvas-container">
+            <header class="canvas-header">
+                <div class="canvas-header-title">SVG INTERACTIVE BOARD</div>
+                <div class="canvas-actions">
+                    <button class="btn-action" id="solve-btn">Solve Loop</button>
+                    <button class="btn-action red" id="clear-btn">Clear Canvas</button>
+                </div>
+            </header>
+            
+            <svg id="diagram-svg" width="100%" height="100%"></svg>
+        </main>
+
+        <!-- RESIZE HANDLE -->
+        <div class="resize-handle" id="right-resize-handle"></div>
+
+        <!-- RIGHT MATHEMATICAL REDUCTION STEPS -->
+        <aside class="right-panel">
+            <div class="panel-header">
+                <h1>Symbolic Solve</h1>
+                <p>Algebraic Exact Rational reduction</p>
+            </div>
+
+            <div class="section-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin-bottom: 0;">Simplified Transfer Function</h3>
+                    <div class="copy-actions" id="copy-actions-container" style="display: none; display: flex; gap: 8px;">
+                        <button class="btn-copy" id="copy-text-btn" title="Copy as Plain Text">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="margin-right: 2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copy Text
+                        </button>
+                        <button class="btn-copy" id="copy-latex-btn" title="Copy as LaTeX">
+                            Copy LaTeX
+                        </button>
+                    </div>
+                </div>
+                <div class="solution-math" id="tf-output">
+                    <!-- Reduced TF formula will render here -->
+                    <span style="color: var(--text-secondary); font-size: 13px;">Diagram solved TF will appear here.</span>
+                </div>
+            </div>
+
+            <div class="section-card" style="flex-grow: 1; display: flex; flex-direction: column;">
+                <h3>Step-by-Step Node Algebra</h3>
+                <div class="steps-list" id="steps-output" style="flex-grow: 1;">
+                    <!-- Steps will render here -->
+                    <div style="color: var(--text-secondary); font-size: 12px; font-style: italic; text-align: center; margin-top: 40px;">
+                        Connect your input R to output Y and blocks, then solve to view algebraic steps.
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Application Script Initialization (Offline Bundle) -->
+    <script defer src="./bundle.js"></script>
+</body>
+</html>
