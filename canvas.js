@@ -105,6 +105,15 @@ export class BlockDiagramCanvas {
                     this.deleteSelected();
                 } else if (e.key.toLowerCase() === 'r') {
                     this.rotateSelected();
+                } else if (e.key === 'Escape') {
+                    if (this.activeWire) {
+                        this.activeWire = null;
+                        this.render();
+                    } else if (this.selectedElement) {
+                        this.selectedElement = null;
+                        this.render();
+                        this.onStateChange();
+                    }
                 }
             }
         });

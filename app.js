@@ -419,6 +419,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Global keyboard shortcut for S (Solve) when not typing inside an input element
+    window.addEventListener('keydown', (e) => {
+        const active = document.activeElement;
+        const isEditing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        if (!isEditing && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            triggerSolve();
+        }
+    });
+
     // Load simple standard feedback loop on initial start to instantly demonstrate features
     loadTemplate('feedback');
 });

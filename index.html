@@ -73,6 +73,29 @@
                 </button>
             </div>
 
+            <!-- Keyboard Shortcuts -->
+            <h2 style="margin-top: 24px;">Keyboard Shortcuts</h2>
+            <div class="section-card" style="margin-bottom: 24px; padding: 14px; background: rgba(30, 41, 59, 0.2); border: 1px solid var(--border-color); border-radius: 8px;">
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 11px; color: var(--text-secondary);">
+                    <li style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Rotate Component</span>
+                        <kbd style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: var(--text-primary); font-weight: bold; font-size: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.5);">R</kbd>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Solve Diagram</span>
+                        <kbd style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: var(--text-primary); font-weight: bold; font-size: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.5);">S</kbd>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Delete Selected</span>
+                        <kbd style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: var(--text-primary); font-weight: bold; font-size: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.5);">Del</kbd>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Cancel Wire / Deselect</span>
+                        <kbd style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: var(--text-primary); font-weight: bold; font-size: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.5);">Esc</kbd>
+                    </li>
+                </ul>
+            </div>
+
             <!-- Standalone App Updates -->
             <div id="update-section" style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
                 <button class="btn-action" id="update-btn" style="width: 100%; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25); color: #10b981; font-family: var(--font-outfit); font-size: 12px; font-weight: 600; padding: 10px 12px; transition: all 0.2s;">
@@ -80,7 +103,7 @@
                 </button>
                 <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px; align-items: center;">
                     <div id="app-version-label" style="color: var(--text-secondary); font-size: 10px; opacity: 0.5; font-family: var(--font-inter);">
-                        v1.0.2
+                        v1.0.3
                     </div>
                     <div id="update-status-msg" style="color: var(--text-secondary); font-size: 11px; text-align: center; min-height: 16px; font-style: italic;">
                         Standalone desktop app mode
