@@ -512,24 +512,16 @@ export function analyzeImageTopology(grayscaleData, width, height) {
     for (let i = 0; i < flooded.length; i++) if (flooded[i] === 1) floodBg++;
     console.log(`[Diagnostic] Flooded background pixels: ${floodBg} / ${width * height} (${(floodBg / (width * height) * 100).toFixed(2)}%)`);
     
-    // Check for leaks
-    let shapes = [];
-    const floodPixels = flooded.reduce((sum, val) => sum + val, 0);
-    const isLeaked = (floodPixels / (width * height)) > 0.98;
-    console.log(`[Diagnostic] isLeaked: ${isLeaked}`);
-
-    if (!isLeaked) {
-        const rawEnclosures = findEnclosedShapes(closed, flooded, width, height);
-        console.log(`[Diagnostic] Raw Enclosures found: ${rawEnclosures.length}`);
-        shapes = groupShapes(rawEnclosures);
-        console.log(`[Diagnostic] Grouped Shapes found: ${shapes.length}`);
-    }
-
+    // Find enclosed shapes (always run)
+    const rawEnclosures = findEnclosedShapes(closed, flooded, width, height);
+    console.log(`[Diagnostic] Raw Enclosures found: ${rawEnclosures.length}`);
+    const enclosedShapes = groupShapes(rawEnclosures);
+    console.log(`[Diagnostic] Grouped Enclosed Shapes found: ${enclosedShapes.length}`);
 
     // 5. Wire scanning (pre-closed binary!)
-    // Block out shapes so we don't trace inside them
-    const insideShape = new Uint8Array(width * height);
-    shapes.forEach(s => {
+    // For wire blocking, we block out the current enclosed shapes first
+    const insideShapeTemp = new Uint8Array(width * height);
+    enclosedShapes.forEach(s => {
         const pad = 2;
         const minX = Math.max(0, s.minX - pad);
         const maxX = Math.min(width - 1, s.maxX + pad);
@@ -537,7 +529,7 @@ export function analyzeImageTopology(grayscaleData, width, height) {
         const maxY = Math.min(height - 1, s.maxY + pad);
         for (let y = minY; y <= maxY; y++) {
             for (let x = minX; x <= maxX; x++) {
-                insideShape[y * width + x] = 1;
+                insideShapeTemp[y * width + x] = 1;
             }
         }
     });
@@ -548,7 +540,7 @@ export function analyzeImageTopology(grayscaleData, width, height) {
         let startX = -1;
         for (let x = 0; x < width; x++) {
             const idx = y * width + x;
-            const isFore = binary[idx] === 1 && insideShape[idx] === 0;
+            const isFore = binary[idx] === 1 && insideShapeTemp[idx] === 0;
             if (isFore) {
                 if (startX === -1) startX = x;
             } else {
@@ -570,7 +562,7 @@ export function analyzeImageTopology(grayscaleData, width, height) {
         let startY = -1;
         for (let y = 0; y < height; y++) {
             const idx = y * width + x;
-            const isFore = binary[idx] === 1 && insideShape[idx] === 0;
+            const isFore = binary[idx] === 1 && insideShapeTemp[idx] === 0;
             if (isFore) {
                 if (startY === -1) startY = y;
             } else {
@@ -622,36 +614,65 @@ export function analyzeImageTopology(grayscaleData, width, height) {
         }
     });
 
-    // 6. Fallback CCL for leaked shapes
-    if (isLeaked) {
-        // Strip wires in binary copy
-        const wireStripped = new Uint8Array(binary);
-        allWires.forEach(w => {
-            if (w.type === 'v') {
-                const minY = Math.min(w.y1, w.y2);
-                const maxY = Math.max(w.y1, w.y2);
-                for (let y = minY; y <= maxY; y++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        const nx = w.x1 + dx;
-                        if (nx >= 0 && nx < width) wireStripped[y * width + nx] = 0;
-                    }
-                }
-            } else {
-                const minX = Math.min(w.x1, w.x2);
-                const maxX = Math.max(w.x1, w.x2);
-                for (let x = minX; x <= maxX; x++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        const ny = w.y1 + dy;
-                        if (ny >= 0 && ny < height) wireStripped[ny * width + x] = 0;
-                    }
+    // 6. Run wire-stripped connected component (CCL) shape scanner
+    const wireStripped = new Uint8Array(binary);
+    allWires.forEach(w => {
+        if (w.type === 'v') {
+            const minY = Math.min(w.y1, w.y2);
+            const maxY = Math.max(w.y1, w.y2);
+            for (let y = minY; y <= maxY; y++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const nx = w.x1 + dx;
+                    if (nx >= 0 && nx < width) wireStripped[y * width + nx] = 0;
                 }
             }
-        });
+        } else {
+            const minX = Math.min(w.x1, w.x2);
+            const maxX = Math.max(w.x1, w.x2);
+            for (let x = minX; x <= maxX; x++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    const ny = w.y1 + dy;
+                    if (ny >= 0 && ny < height) wireStripped[ny * width + x] = 0;
+                }
+            }
+        }
+    });
 
-        // Run Connected Component Labeling on wire-stripped strokes!
-        const rawForegroundComps = runForegroundCCL(wireStripped, width, height);
-        shapes = groupShapes(rawForegroundComps);
-    }
+    // Run Connected Component Labeling on wire-stripped strokes!
+    const rawForegroundComps = runForegroundCCL(wireStripped, width, height);
+    const cclShapes = groupShapes(rawForegroundComps);
+    console.log(`[Diagnostic] Raw CCL components found: ${rawForegroundComps.length}`);
+    console.log(`[Diagnostic] Grouped CCL Shapes found: ${cclShapes.length}`);
+
+    // Reconcile enclosed shapes and CCL shapes!
+    const finalShapes = [...enclosedShapes];
+    
+    cclShapes.forEach(c => {
+        // Check if c overlaps significantly with any shape in finalShapes
+        let overlap = false;
+        for (let i = 0; i < finalShapes.length; i++) {
+            const s = finalShapes[i];
+            
+            // Check bounding box intersection with a loose margin
+            const pad = 5;
+            const xOverlap = Math.max(0, Math.min(s.maxX, c.maxX) - Math.max(s.minX, c.minX) + pad) > 0;
+            const yOverlap = Math.max(0, Math.min(s.maxY, c.maxY) - Math.max(s.minY, c.minY) + pad) > 0;
+            
+            if (xOverlap && yOverlap) {
+                overlap = true;
+                break;
+            }
+        }
+        
+        if (!overlap) {
+            // No overlap, so c is a leaked block or shape! Add it!
+            c.id = `shape_${finalShapes.length + 1}`;
+            finalShapes.push(c);
+        }
+    });
+
+    const shapes = finalShapes;
+    console.log(`[Diagnostic] Reconciled Shapes count: ${shapes.length}`);
 
     // 7. DPI-Independent Sizing Classification
     if (shapes.length > 0) {
