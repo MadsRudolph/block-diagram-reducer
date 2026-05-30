@@ -427,4 +427,18 @@ h2 {
     flex-shrink: 0;
 }
 
+/* Premium KBD keycap hover micro-interactions */
+kbd {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+kbd:hover {
+    border-color: var(--accent-blue) !important;
+    background: rgba(59, 130, 246, 0.18) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.45) !important;
+    transform: scale(1.05);
+}
+
+
 

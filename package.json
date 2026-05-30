@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "esbuild app.js --bundle --outfile=bundle.js --format=iife",
+    "build": "npx esbuild app.js --bundle --outfile=bundle.js --format=iife",
     "start": "electron .",
     "package": "electron-packager . BlockDiagramReducer --platform=win32 --arch=x64 --overwrite",
     "test": "echo \"Error: no test specified\" && exit 1"
