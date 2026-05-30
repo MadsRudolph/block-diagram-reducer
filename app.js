@@ -7,6 +7,7 @@
 import { BlockDiagramCanvas } from './canvas.js';
 import { solveBlockDiagram } from './solver.js';
 import { TransferFunction } from './math-engine.js';
+import { analyzeImageTopology } from './vision-analyzer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const svgEl = document.getElementById('diagram-svg');
@@ -455,6 +456,241 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerSolve();
         }
     });
+
+    // -------------------------------------------------------------
+    // Screenshot Importer & Offline Vision Segmentation Bindings
+    // -------------------------------------------------------------
+    const visionModal = document.getElementById('vision-modal');
+    const openVisionBtn = document.getElementById('open-vision-btn');
+    const closeVisionBtn = document.getElementById('close-vision-btn');
+    const cancelVisionBtn = document.getElementById('cancel-vision-btn');
+    const processVisionBtn = document.getElementById('process-vision-btn');
+    const removePreviewBtn = document.getElementById('remove-preview-btn');
+    const visionDropzone = document.getElementById('vision-dropzone');
+    const visionFileInput = document.getElementById('vision-file-input');
+    const visionPreviewContainer = document.getElementById('vision-preview-container');
+    const visionPreviewImg = document.getElementById('vision-preview-img');
+    const visionStatusContainer = document.getElementById('vision-status-container');
+    const visionStatusText = document.getElementById('vision-status-text');
+
+    let loadedImage = null;
+
+    function openModal() {
+        if (visionModal) {
+            visionModal.style.display = 'flex';
+            resetModal();
+        }
+    }
+
+    function closeModal() {
+        if (visionModal) visionModal.style.display = 'none';
+    }
+
+    function resetModal() {
+        loadedImage = null;
+        if (visionFileInput) visionFileInput.value = '';
+        if (visionPreviewImg) visionPreviewImg.src = '';
+        if (visionPreviewContainer) visionPreviewContainer.style.display = 'none';
+        if (visionDropzone) visionDropzone.style.display = 'flex';
+        if (visionStatusContainer) visionStatusContainer.style.display = 'none';
+        if (processVisionBtn) processVisionBtn.disabled = true;
+    }
+
+    if (openVisionBtn) openVisionBtn.addEventListener('click', openModal);
+    if (closeVisionBtn) closeVisionBtn.addEventListener('click', closeModal);
+    if (cancelVisionBtn) cancelVisionBtn.addEventListener('click', closeModal);
+    if (removePreviewBtn) removePreviewBtn.addEventListener('click', resetModal);
+
+    // Browse files
+    if (visionDropzone) {
+        visionDropzone.addEventListener('click', () => {
+            if (visionFileInput) visionFileInput.click();
+        });
+
+        // Drag & Drop
+        visionDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            visionDropzone.classList.add('dragover');
+        });
+
+        visionDropzone.addEventListener('dragleave', () => {
+            visionDropzone.classList.remove('dragover');
+        });
+
+        visionDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            visionDropzone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+    }
+
+    if (visionFileInput) {
+        visionFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+    }
+
+    // Direct paste support monitor
+    document.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                handleFile(blob);
+                openModal();
+                e.preventDefault();
+                break;
+            }
+        }
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (visionPreviewImg) visionPreviewImg.src = event.target.result;
+            if (visionPreviewContainer) visionPreviewContainer.style.display = 'block';
+            if (visionDropzone) visionDropzone.style.display = 'none';
+            if (processVisionBtn) processVisionBtn.disabled = false;
+
+            const img = new Image();
+            img.onload = () => {
+                loadedImage = img;
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (processVisionBtn) {
+        processVisionBtn.addEventListener('click', () => {
+            if (!loadedImage) return;
+
+            processVisionBtn.disabled = true;
+            if (visionStatusContainer) {
+                visionStatusContainer.style.display = 'block';
+                visionStatusText.textContent = "Tracing closed shapes and wires...";
+            }
+
+            setTimeout(() => {
+                try {
+                    const canvasWidth = loadedImage.width;
+                    const canvasHeight = loadedImage.height;
+
+                    const offscreen = document.createElement('canvas');
+                    offscreen.width = canvasWidth;
+                    offscreen.height = canvasHeight;
+                    const oCtx = offscreen.getContext('2d');
+                    oCtx.drawImage(loadedImage, 0, 0, canvasWidth, canvasHeight);
+
+                    const imgData = oCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+                    // Run the 100% Offline Topology Engine
+                    const result = analyzeImageTopology(imgData.data, canvasWidth, canvasHeight);
+
+                    // Draw layout as editable Proposals on the interactive canvas!
+                    injectProposals(result, canvasWidth, canvasHeight);
+
+                    closeModal();
+                } catch (err) {
+                    console.error(err);
+                    alert("Diagram parsing error: " + err.message);
+                    if (processVisionBtn) processVisionBtn.disabled = false;
+                    if (visionStatusContainer) visionStatusContainer.style.display = 'none';
+                }
+            }, 100);
+        });
+    }
+
+    function injectProposals(result, origW, origH) {
+        canvas.clear();
+        clearMathDisplays();
+
+        // Fit diagram onto our 1200x600 grid dynamically maintaining aspect ratio
+        const targetW = 1100;
+        const targetH = 500;
+        const scaleX = targetW / origW;
+        const scaleY = targetH / origH;
+        const scale = Math.min(scaleX, scaleY) * 0.9; // shrink slightly for padding
+
+        const offsetX = (1200 - origW * scale) / 2;
+        const offsetY = (600 - origH * scale) / 2;
+
+        const idMap = {};
+        let blockIdx = 1;
+        let feedbackIdx = 1;
+
+        // 1. Create dangling Input / Output terminal nodes
+        result.terminals.forEach(t => {
+            const tx = Math.round(t.x * scale + offsetX);
+            const ty = Math.round(t.y * scale + offsetY);
+
+            if (t.type === 'input') {
+                const node = canvas.addNode('input', tx, ty, '1', 'R');
+                idMap[t.id] = node.id;
+            } else {
+                const node = canvas.addNode('output', tx, ty, '1', 'Y');
+                idMap[t.id] = node.id;
+            }
+        });
+
+        // 2. Identify Feedback vs Feedforward Blocks based on spatial vertical offset
+        let termYSum = 0;
+        result.terminals.forEach(t => termYSum += t.y);
+        const averageTermY = result.terminals.length > 0 ? (termYSum / result.terminals.length) : (origH / 2);
+
+        // Create other shapes (Sum Junctions & Blocks)
+        result.shapes.forEach(s => {
+            const cx = (s.minX + s.maxX) / 2;
+            const cy = (s.minY + s.maxY) / 2;
+
+            const tx = Math.round(cx * scale + offsetX);
+            const ty = Math.round(cy * scale + offsetY);
+
+            if (s.type === 'sum') {
+                const node = canvas.addNode('sum', tx, ty, '', 'Σ');
+                idMap[s.id] = node.id;
+            } else {
+                // If it is positioned significantly below the main signal level, classify as a feedback loop element
+                const isFeedback = cy > (averageTermY + 30);
+                
+                let label = "";
+                let dir = "right";
+                if (isFeedback) {
+                    label = `H${feedbackIdx++}`;
+                    dir = "left"; // Set direction leftward for feedback block loop alignment
+                } else {
+                    label = `G${blockIdx++}`;
+                    dir = "right";
+                }
+
+                const node = canvas.addNode('block', tx, ty, 'G(s)', label);
+                node.direction = dir;
+                idMap[s.id] = node.id;
+            }
+        });
+
+        // 3. Inject snaps and collinear connection trees
+        result.connections.forEach(c => {
+            const fromCanvasId = idMap[c.fromNode];
+            const toCanvasId = idMap[c.toNode];
+
+            if (fromCanvasId && toCanvasId) {
+                canvas.connections.push({
+                    id: canvas.generateId('conn'),
+                    fromNode: fromCanvasId,
+                    toNode: toCanvasId,
+                    sign: c.sign || ''
+                });
+            }
+        });
+
+        canvas.render();
+        updateDiagramStats();
+        triggerSolve();
+    }
 
     // Load simple standard feedback loop on initial start to instantly demonstrate features
     loadTemplate('feedback');
