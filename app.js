@@ -372,6 +372,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // -------------------------------------------------------------
+    // Standalone Desktop App Updater (GitHub Git Integration)
+    // -------------------------------------------------------------
+    const updateSection = document.getElementById('update-section');
+    const updateBtn = document.getElementById('update-btn');
+    const updateStatusMsg = document.getElementById('update-status-msg');
+
+    // Dynamically show updater only inside Electron standalone window
+    if (window.electronAPI) {
+        if (updateSection) updateSection.style.display = 'block';
+
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                updateBtn.disabled = true;
+                updateBtn.style.opacity = '0.6';
+                window.electronAPI.checkUpdate();
+            });
+        }
+
+        // Receive real-time update execution status logs from Main Process
+        window.electronAPI.onUpdateStatus((info) => {
+            if (!updateStatusMsg) return;
+
+            updateStatusMsg.textContent = info.message;
+
+            if (info.status === 'checking') {
+                updateStatusMsg.style.color = 'var(--accent-blue)';
+            } else if (info.status === 'updating') {
+                updateStatusMsg.style.color = 'var(--accent-purple)';
+            } else if (info.status === 'success') {
+                updateStatusMsg.style.color = 'var(--accent-green)';
+            } else if (info.status === 'up-to-date') {
+                updateStatusMsg.style.color = 'var(--text-secondary)';
+                if (updateBtn) {
+                    updateBtn.disabled = false;
+                    updateBtn.style.opacity = '1';
+                }
+            } else if (info.status === 'error') {
+                updateStatusMsg.style.color = 'var(--accent-red)';
+                if (updateBtn) {
+                    updateBtn.disabled = false;
+                    updateBtn.style.opacity = '1';
+                }
+            }
+        });
+    }
+
     // Load simple standard feedback loop on initial start to instantly demonstrate features
     loadTemplate('feedback');
 });
