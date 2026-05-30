@@ -19,6 +19,10 @@ export class BlockDiagramCanvas {
         this.dragOffset = { x: 0, y: 0 };
         this.nextId = 1;
 
+        // Background blueprint template watermark tracking
+        this.blueprintImgData = null;
+        this.blueprintOpacity = 0.25;
+
         this.initEvents();
         this.render();
     }
@@ -690,6 +694,21 @@ export class BlockDiagramCanvas {
         gridRect.setAttribute('height', '100%');
         gridRect.setAttribute('fill', 'url(#grid)');
         this.svg.appendChild(gridRect);
+
+        // Draw blueprint if loaded
+        if (this.blueprintImgData) {
+            const blueprint = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+            blueprint.setAttribute('id', 'canvas-blueprint');
+            blueprint.setAttribute('x', '0');
+            blueprint.setAttribute('y', '0');
+            blueprint.setAttribute('width', '100%');
+            blueprint.setAttribute('height', '100%');
+            blueprint.setAttribute('opacity', this.blueprintOpacity);
+            blueprint.setAttribute('style', 'pointer-events: none;');
+            blueprint.setAttribute('href', this.blueprintImgData);
+            blueprint.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', this.blueprintImgData);
+            this.svg.appendChild(blueprint);
+        }
 
         // Draw established connections
         for (const conn of this.connections) {

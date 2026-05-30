@@ -578,13 +578,11 @@ document.addEventListener('DOMContentLoaded', () => {
         traceBlueprintBtn.addEventListener('click', () => {
             if (!loadedImage) return;
 
-            // Load DataURL directly into SVG image watermark layer
+            // Store image DataURL directly on canvas instance for persistent rendering
             const imgDataUrl = visionPreviewImg.src;
-            if (canvasBlueprint) {
-                canvasBlueprint.setAttribute('href', imgDataUrl);
-                canvasBlueprint.style.display = 'block';
-                canvasBlueprint.setAttribute('opacity', '0.25');
-            }
+            canvas.blueprintImgData = imgDataUrl;
+            canvas.blueprintOpacity = 0.25;
+            canvas.render();
 
             if (blueprintControls) {
                 blueprintControls.style.display = 'flex';
@@ -599,18 +597,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (blueprintOpacity) {
         blueprintOpacity.addEventListener('input', (e) => {
-            if (canvasBlueprint) {
-                canvasBlueprint.setAttribute('opacity', e.target.value / 100);
-            }
+            canvas.blueprintOpacity = e.target.value / 100;
+            canvas.render();
         });
     }
 
     if (clearBlueprintBtn) {
         clearBlueprintBtn.addEventListener('click', () => {
-            if (canvasBlueprint) {
-                canvasBlueprint.removeAttribute('href');
-                canvasBlueprint.style.display = 'none';
-            }
+            canvas.blueprintImgData = null;
+            canvas.render();
             if (blueprintControls) {
                 blueprintControls.style.display = 'none';
             }
