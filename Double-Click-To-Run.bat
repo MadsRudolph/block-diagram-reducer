@@ -29,6 +29,23 @@ if not exist "node_modules\" (
     )
 )
 
+:: 2b. Ensure the Electron runtime binary actually downloaded.
+::     npm install does NOT reliably trigger Electron's binary download
+::     (it can be skipped or fail silently), which makes packaging fail later.
+if not exist "node_modules\electron\dist\electron.exe" (
+    echo =======================================================
+    echo Electron runtime binary missing. Downloading it now...
+    echo This is a one-time ~230 MB download.
+    echo =======================================================
+    node "node_modules\electron\install.js"
+    if not exist "node_modules\electron\dist\electron.exe" (
+        echo ERROR: Electron runtime download failed!
+        echo Check your internet connection and run this file again.
+        pause
+        exit /b
+    )
+)
+
 :: 3. Check if bundle exists (auto-build)
 if not exist "bundle.js" (
     echo =======================================================
