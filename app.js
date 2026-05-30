@@ -465,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeVisionBtn = document.getElementById('close-vision-btn');
     const cancelVisionBtn = document.getElementById('cancel-vision-btn');
     const processVisionBtn = document.getElementById('process-vision-btn');
+    const traceBlueprintBtn = document.getElementById('trace-blueprint-btn');
     const removePreviewBtn = document.getElementById('remove-preview-btn');
     const visionDropzone = document.getElementById('vision-dropzone');
     const visionFileInput = document.getElementById('vision-file-input');
@@ -472,6 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const visionPreviewImg = document.getElementById('vision-preview-img');
     const visionStatusContainer = document.getElementById('vision-status-container');
     const visionStatusText = document.getElementById('vision-status-text');
+
+    // Canvas Watermark controls
+    const canvasBlueprint = document.getElementById('canvas-blueprint');
+    const blueprintControls = document.getElementById('blueprint-controls');
+    const blueprintOpacity = document.getElementById('blueprint-opacity');
+    const clearBlueprintBtn = document.getElementById('clear-blueprint-btn');
 
     let loadedImage = null;
 
@@ -494,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (visionDropzone) visionDropzone.style.display = 'flex';
         if (visionStatusContainer) visionStatusContainer.style.display = 'none';
         if (processVisionBtn) processVisionBtn.disabled = true;
+        if (traceBlueprintBtn) traceBlueprintBtn.disabled = true;
     }
 
     if (openVisionBtn) openVisionBtn.addEventListener('click', openModal);
@@ -554,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (visionPreviewContainer) visionPreviewContainer.style.display = 'block';
             if (visionDropzone) visionDropzone.style.display = 'none';
             if (processVisionBtn) processVisionBtn.disabled = false;
+            if (traceBlueprintBtn) traceBlueprintBtn.disabled = false;
 
             const img = new Image();
             img.onload = () => {
@@ -562,6 +571,50 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
+    }
+
+    // Blueprint Watermark Hooks
+    if (traceBlueprintBtn) {
+        traceBlueprintBtn.addEventListener('click', () => {
+            if (!loadedImage) return;
+
+            // Load DataURL directly into SVG image watermark layer
+            const imgDataUrl = visionPreviewImg.src;
+            if (canvasBlueprint) {
+                canvasBlueprint.setAttribute('href', imgDataUrl);
+                canvasBlueprint.style.display = 'block';
+                canvasBlueprint.setAttribute('opacity', '0.25');
+            }
+
+            if (blueprintControls) {
+                blueprintControls.style.display = 'flex';
+            }
+            if (blueprintOpacity) {
+                blueprintOpacity.value = 25;
+            }
+
+            closeModal();
+        });
+    }
+
+    if (blueprintOpacity) {
+        blueprintOpacity.addEventListener('input', (e) => {
+            if (canvasBlueprint) {
+                canvasBlueprint.setAttribute('opacity', e.target.value / 100);
+            }
+        });
+    }
+
+    if (clearBlueprintBtn) {
+        clearBlueprintBtn.addEventListener('click', () => {
+            if (canvasBlueprint) {
+                canvasBlueprint.removeAttribute('href');
+                canvasBlueprint.style.display = 'none';
+            }
+            if (blueprintControls) {
+                blueprintControls.style.display = 'none';
+            }
+        });
     }
 
     if (processVisionBtn) {

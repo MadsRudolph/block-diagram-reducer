@@ -139,13 +139,24 @@
         <main class="canvas-container">
             <header class="canvas-header">
                 <div class="canvas-header-title">SVG INTERACTIVE BOARD</div>
+                
+                <!-- Background Blueprint Watermark Controls -->
+                <div class="blueprint-controls" id="blueprint-controls" style="display: none; align-items: center; gap: 10px; background: rgba(30, 41, 59, 0.45); padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <span style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Blueprint Opacity:</span>
+                    <input type="range" id="blueprint-opacity" min="0" max="100" value="25" style="width: 80px; cursor: pointer;">
+                    <button class="btn-action red" id="clear-blueprint-btn" style="padding: 2px 8px; font-size: 10px; line-height: 1.2;">Clear Blueprint</button>
+                </div>
+
                 <div class="canvas-actions">
                     <button class="btn-action" id="solve-btn">Solve Loop</button>
                     <button class="btn-action red" id="clear-btn">Clear Canvas</button>
                 </div>
             </header>
             
-            <svg id="diagram-svg" width="100%" height="100%"></svg>
+            <svg id="diagram-svg" width="100%" height="100%">
+                <!-- Background Blueprint Watermark -->
+                <image id="canvas-blueprint" x="0" y="0" width="1200" height="600" opacity="0.25" style="display: none; pointer-events: none;"></image>
+            </svg>
         </main>
 
         <!-- RESIZE HANDLE -->
@@ -231,7 +242,11 @@
             
             <div class="modal-footer">
                 <button class="btn-action" id="cancel-vision-btn">Cancel</button>
-                <button class="btn-action green" id="process-vision-btn" disabled>Process Layout</button>
+                <button class="btn-action blue" id="trace-blueprint-btn" style="display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    Trace as Canvas Blueprint (Recommended)
+                </button>
+                <button class="btn-action green" id="process-vision-btn" disabled>Auto-Generate (Experimental)</button>
             </div>
         </div>
     </div>
