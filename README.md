@@ -32,8 +32,9 @@ To download and run this app locally:
     Open the folder in Windows Explorer and double-click the launcher script:
     **`Double-Click-To-Run.bat`**
 
-    *   **What this does:** It automatically checks if you have Node.js installed, runs `npm install` to download dependencies locally, compiles the JavaScript bundle, packages the application as a standalone desktop executable (`.exe`), and opens the desktop window.
+    *   **What this does:** It automatically checks if you have Node.js installed, runs `npm install` to download dependencies locally, makes sure the Electron runtime is present, compiles the JavaScript bundle, and opens the desktop window directly from this folder.
     *   **Subsequent launches:** On all subsequent launches, double-clicking `Double-Click-To-Run.bat` will skip the installer and boot up the desktop application natively in under a second!
+    *   **Staying up to date:** Because the app runs live from this cloned folder (not a frozen packaged copy), the in-app **Check for Updates** button can `git pull` the latest code, rebuild, and reload so new features appear immediately.
 
 ---
 
@@ -69,7 +70,7 @@ If you modify any source code files (`app.js`, `canvas.js`, `solver.js`, or `mat
 
 *   `npm run build`: Bundles the ES6 modular JS source into a single browser-compatible `bundle.js` using `esbuild`.
 *   `npm start`: Opens your current developer code inside an Electron environment for fast debugging.
-*   `npm run package`: Packs the codebase and Electron runtime into the offline Windows build folder (`BlockDiagramReducer-win32-x64/`).
+*   `npm run package`: (Optional) Packs the codebase and Electron runtime into a standalone Windows build folder (`BlockDiagramReducer-win32-x64/`). Note: a packaged build is a frozen snapshot and will **not** receive in-app updates — use `Double-Click-To-Run.bat` for the self-updating experience.
 
 ---
 
